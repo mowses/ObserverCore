@@ -102,8 +102,7 @@
             });
         }
 
-        this.init = function() {
-
+        function init() {
             self.events.on('update data.__watching_data__', function(updated_data) {
                 var utils = self.utils;
 
@@ -141,12 +140,12 @@
                     if (!utils.isset(diff) && !utils.isset(deleted)) return;
 
                     // run the callback
-                    watching.callback(updated_data);
+                    watching.callback.call(watching.scope, updated_data);
 
                 });
             });
 
-        };
+        }
 
         this.setData = function(new_data, replace) {
             if (replace) {
@@ -177,11 +176,15 @@
             check_changes(old_data, data);
 
             stopTimeout();
+
+            return this;
         };
 
         this.restoreParams = function() {
             data = $.extend(true, {}, data_old);
             stopTimeout();
+
+            return this;
         };
 
         /**
@@ -197,7 +200,8 @@
 
             watching_callbacks.push({
                 params: params,
-                callback: callback
+                callback: callback,
+                scope: this
             });
 
             return this;
@@ -215,7 +219,7 @@
             return _data;
         };
 
-        this.init();
+        init();
 
     }
 
