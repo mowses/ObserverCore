@@ -52,7 +52,7 @@
                 var a = propToArray(s);
                 while (a.length) {
                     var n = a.shift();
-                    if (!$.isPlainObject(o)) {
+                    if (!$.isPlainObject(o) && !$.isArray(o)) {
                         return;
                     } else if (n in o) {
                         o = o[n];
