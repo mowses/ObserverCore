@@ -214,7 +214,12 @@
                 _data = this.utils.getProp(data, prop);
             }
 
-            startTimeout();
+            if ($.isPlainObject(_data) || $.isArray(_data)) {
+                // only start timeout if _data is either an object or array
+                // if returned _data is a primitive value, it doesnt need to start timeout
+                // since you cannot change the value of returned _data outside this scope
+                startTimeout();
+            }
 
             return _data;
         };
