@@ -111,6 +111,7 @@
                             var _diff;
 
                             $.each(watching.params, function(i, param) {
+                                param = $.isFunction(param) ? param() : param;
                                 var prop = utils.getProp(updated_data, 'diff.' + param);
 
                                 if (utils.isset(prop)) {
@@ -126,6 +127,7 @@
                             var _deleted;
 
                             $.each(watching.params, function(i, param) {
+                                param = $.isFunction(param) ? param() : param;
                                 var prop = utils.getProp(updated_data, 'deleted.' + param);
 
                                 if (utils.isset(prop)) {
@@ -189,7 +191,7 @@
 
         /**
          * watch for changes in your data
-         * @param  {string, array}   params   params to watch for
+         * @param  {string, array, callback}   params   params to watch for
          * @param  {Function} callback callback to run when your param changes
          * @return {Object}            return itself for method chaining
          */
