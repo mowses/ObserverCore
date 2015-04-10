@@ -49,7 +49,7 @@
             },
 
             getProp: function(o, s) {
-                var a = propToArray(s);
+                var a = $.isArray(s) ? s : propToArray(s);
                 while (a.length) {
                     var n = a.shift();
                     if (!$.isPlainObject(o) && !$.isArray(o)) {
@@ -148,6 +148,41 @@
             });
 
         }
+
+        this.setData2 = function(prop, new_data) {
+            var props = propToArray(prop),
+                last_prop = props.pop(),
+                _data = self.utils.getProp(data, props);
+
+            if (!$.isPlainObject(_data) && !$.isArray(_data)) {
+                self.extendData2.apply(self, arguments);
+                return this;
+            }
+
+            _data[last_prop] = new_data;
+
+            startTimeout();
+
+            return this;
+        };
+
+        this.extendData2 = function(prop, new_data) {
+            var props = propToArray(prop),
+                last_prop = props.pop(),
+                _data = self.utils.getProp(data, props),
+                created_data = self.utils.object([last_prop], new_data);
+
+            if (!$.isPlainObject(_data)) {
+                self.setData2.apply(self, arguments);
+                return this;
+            }
+
+            $.extend(_data, created_data);
+
+            startTimeout();
+
+            return this;
+        };
 
         this.setData = function(new_data, replace) {
             if (replace) {
