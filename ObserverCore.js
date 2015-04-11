@@ -12,67 +12,6 @@
             'update data'
         ]);
 
-        this.utils = {
-            /**
-             * create and return javascript nested objects with dinamic keys
-             */
-            object: function(indexes, value) {
-                var object = {},
-                    inner_object = object,
-                    indexes_length = indexes.length - 1;
-
-                for (i in indexes) {
-                    var key = indexes[i];
-
-                    if (i < indexes_length) {
-                        inner_object[key] = {};
-                        inner_object = inner_object[key];
-                    } else {
-                        inner_object[key] = value;
-                    }
-                }
-
-                return object;
-            },
-
-            isset: function() {
-                var a = arguments,
-                    l = a.length,
-                    i = 0,
-                    undef;
-
-                while (i !== l) {
-                    if (a[i] === undef || a[i] === null) return false;
-                    i++;
-                }
-                return true;
-            },
-
-            getProp: function(o, s) {
-                var a = $.isArray(s) ? s : propToArray(s);
-                while (a.length) {
-                    var n = a.shift();
-                    if (!$.isPlainObject(o) && !$.isArray(o)) {
-                        return;
-                    } else if (n in o) {
-                        o = o[n];
-                    } else {
-                        return;
-                    }
-                }
-                return o;
-            }
-        };
-
-        function propToArray(s) {
-            s = s.replace(/["']/g, ''); // replace single and double quotes
-            s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-            s = s.replace(/^[.\s]+|[.\s]+$/g, ''); // strip a leading dot
-            var a = s.split('.');
-
-            return a;
-        }
-
         function check_changes(old_data, new_data) {
             var data_diff = ObjDiff(new_data, old_data),
                 data_deleted = ObjDeleted(data, old_data);
@@ -149,48 +88,27 @@
 
         }
 
-        this.setData2 = function(prop, new_data) {
-            var props = propToArray(prop),
+        this.setData = function(prop, new_data) {
+            var utils = self.utils;
+
+            if (!utils.isset(new_data)) {
+                new_data = prop;
+                prop = undefined;
+            }
+            if (!utils.isset(prop)) {
+                data = new_data;
+                startTimeout();
+                return this;
+            }
+
+            var props = utils.propToArray(prop),
                 last_prop = props.pop(),
                 _data = self.utils.getProp(data, props);
 
-            if (!$.isPlainObject(_data) && !$.isArray(_data)) {
-                self.extendData2.apply(self, arguments);
-                return this;
-            }
-
-            _data[last_prop] = new_data;
-
-            startTimeout();
-
-            return this;
-        };
-
-        this.extendData2 = function(prop, new_data) {
-            var props = propToArray(prop),
-                last_prop = props.pop(),
-                _data = self.utils.getProp(data, props),
-                created_data = self.utils.object([last_prop], new_data);
-
-            if (!$.isPlainObject(_data)) {
-                self.setData2.apply(self, arguments);
-                return this;
-            }
-
-            $.extend(_data, created_data);
-
-            startTimeout();
-
-            return this;
-        };
-
-        this.setData = function(new_data, replace) {
-            if (replace) {
-                $.each(new_data, function(k, val) {
-                    data[k] = val;
-                });
+            if ($.isPlainObject(_data) || $.isArray(_data)) {
+                _data[last_prop] = new_data;
             } else {
-                data = new_data;
+                $.extend(true, data, self.utils.object(prop, new_data));
             }
 
             startTimeout();
@@ -198,11 +116,33 @@
             return this;
         };
 
-        this.extendData = function(new_data) {
-            $.extend(true, data, new_data);
+        this.extendData = function(prop, new_data) {
+            var utils = self.utils;
+            if (!utils.isset(new_data)) {
+                new_data = prop;
+                prop = undefined;
+            }
+            if (!utils.isset(prop)) {
+                $.extend(true, data, new_data);
+                startTimeout();
+                return this;
+            }
+
+            var props = utils.propToArray(prop),
+                last_prop = props.pop(),
+                _data = self.utils.getProp(data, props);
+
+            if ($.isArray(_data)) {
+                if (_data[last_prop] === undefined) {
+                    _data[last_prop] = new_data;
+                } else {
+                    $.extend(true, _data[last_prop], new_data);
+                }
+            } else {
+                $.extend(true, data, self.utils.object(prop, new_data));
+            }
 
             startTimeout();
-
             return this;
         };
 
@@ -265,6 +205,76 @@
 
     }
 
+    // singleton
+    $.extend(ObserverCore, {
+        utils: {
+            propToArray: function(s) {
+                s = s.replace(/["']/g, ''); // replace single and double quotes
+                s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+                s = s.replace(/^[.\s]+|[.\s]+$/g, ''); // strip a leading dot
+                var a = s.split('.');
+
+                return a;
+            },
+
+            /**
+             * create and return javascript nested objects with dinamic keys
+             */
+            object: function(indexes, value) {
+                var object = {},
+                    indexes = $.isArray(indexes) ? indexes : ObserverCore.utils.propToArray(indexes),
+                    inner_object = object,
+                    indexes_length = indexes.length - 1;
+
+                for (i in indexes) {
+                    var key = indexes[i];
+
+                    if (i < indexes_length) {
+                        inner_object[key] = {};
+                        inner_object = inner_object[key];
+                    } else {
+                        inner_object[key] = value;
+                    }
+                }
+
+                return object;
+            },
+
+            isset: function() {
+                var a = arguments,
+                    l = a.length,
+                    i = 0,
+                    undef;
+
+                while (i !== l) {
+                    if (a[i] === undef || a[i] === null) return false;
+                    i++;
+                }
+                return true;
+            },
+
+            getProp: function(o, s) {
+                var a = $.isArray(s) ? s : ObserverCore.utils.propToArray(s);
+                while (a.length) {
+                    var n = a.shift();
+                    if (!$.isPlainObject(o) && !$.isArray(o)) {
+                        return;
+                    } else if (n in o) {
+                        o = o[n];
+                    } else {
+                        return;
+                    }
+                }
+                return o;
+            }
+        }
+    });
+
+    // prototype
+    $.extend(ObserverCore.prototype, {
+        utils: ObserverCore.utils
+    });
+
     // Node: Export function
     if (typeof module !== 'undefined' && module.exports) {
         module.exports.ObserverCore = ObserverCore;
@@ -279,5 +289,7 @@
     else {
         window.ObserverCore = ObserverCore;
     }
+
+    return ObserverCore;
 
 })(jQuery, Events, ObjDiff, ObjDeleted);
