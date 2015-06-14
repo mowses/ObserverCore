@@ -209,12 +209,20 @@
     $.extend(ObserverCore, {
         utils: {
             propToArray: function(s) {
-                s = s.replace(/["']/g, ''); // replace single and double quotes
-                s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+                s = s.replace(/(\')(?=(?:(?:[^"]*"){2})*[^"]*$)/g, '"'); // replace single by double quotes but not the ones quoted already
+                s = s.replace(/[\[\]]/g, '.'); // convert indexes to properties
                 s = s.replace(/^[.\s]+|[.\s]+$/g, ''); // strip a leading dot
-                var a = s.split('.');
+                var a = s.match(/(?:[^."]+|"[^"]*")+/g);
 
-                return a;
+                return $.map(a, function(item) {
+                    var first = item.substr(0, 1),
+                        last = item.substr(-1),
+                        single_quoted = (first === '\'' && last === '\''),
+                        double_quoted = (first === '"' && last === '"');
+
+                    if (!single_quoted && !double_quoted) return item;
+                    return item.substr(1, item.length - 2);
+                });
             },
 
             /**
