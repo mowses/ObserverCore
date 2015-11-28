@@ -5,6 +5,7 @@
 
 	var observerCore = new ObserverCore();
 
+	console.clear();
 	console.log('ALL OF THE CONSOLES SHOULD RETURN TRUE TO PASS', observerCore);
 	/////////////////////////////////////////////////////////////////////////////
 	observerCore.setData(undefined, 'changedname');
@@ -159,12 +160,90 @@
 
 	assert('(movies.comedy.actors.length === 3)', observerCore.getData('movies.comedy.actors').length === 3);
 	assert('(movies.comedy.actors[2].name === \'Chris Sucker\')', observerCore.getData('movies.comedy.actors[2].name') === 'Chris Sucker');
+	/////////////////////////////////////////////////////////////////////////////
+	///ASSERT FOR INHERITED PROPERTIES:
+	var movies = {
+		adventure: ['Indy John: The hunters of lost arc']
+	};
+	movies.__proto__ = {
+		getMadeIn: function() {
+			return 'made in HoleWood';
+		},
+		state: 'Carly Forny'
+	};
+	observerCore.setData({
+		movies: movies
+	}).apply();
 
+	console.log('ASSERT FOR INHERITED PROPERTIES:');
+	assert('(movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData('movies.adventure[0]') === 'Indy John: The hunters of lost arc');
+	assert('(movies.state === \'Carly Forny\')', observerCore.getData('movies.state') === 'Carly Forny');
+	assert('(movies.getMadeIn() === \'made in HoleWood\')', observerCore.getData('movies').getMadeIn() === 'made in HoleWood');
+	assert('(movies.hasOwnProperty(\'getMadeIn\') === false)', observerCore.getData('movies').hasOwnProperty('getMadeIn') === false);
 
+	console.log('ASSERT FOR CHANGES:');
+	var watches = 0;
+	observerCore
+	.watch('movies.adventure[0]', function(data) {
+		assert('(watch(\'movies.adventure[0]\') - old value: ' + data.old.movies.adventure[0] + ' new value: ' + data.new.movies.adventure[0], data.diff.movies.adventure[0] === 'The Adventure of Indiana Dog: Hunting for Bones');
+		assert('above watch should run once:', (++watches === 1));
+	})
+	.watch('movies.getMadeIn', function(data) {
+		assert('(watch(\'movies.getMadeIn\') - old value: ' + data.old.movies.getMadeIn + ' new value: ' + data.new.movies.getMadeIn, data.new.movies.getMadeIn !== data.old.movies.getMadeIn);
+		assert('above watch should run once:', (++watches === 2));
+	})
+	.watch('movies.state', function(data) {
+		assert('(watch(\'movies.state\') - old value: ' + data.old.movies.state + ' new value: ' + data.new.movies.state, data.new.movies.state !== data.old.movies.state);
+		assert('above watch should run once:', (++watches === 3));
+	})
+	.watch('movies.directors.s', function(data) {
+		var old_value = ObserverCore.utils.getProp(data.old, ['movies', 'directors', 's']),
+			new_value = data.new.movies.directors.s;
 
+		++watches;
 
+		assert('(watch(\'movies.directors.s\') - old value: ' + old_value + ' new value: ' + new_value, new_value !== old_value);
+	});
+
+	var changed_movies = {
+		adventure: ['The Adventure of Indiana Dog: Hunting for Bones']
+	};
+	changed_movies.__proto__ = {
+		getMadeIn: function() {
+			return 'made in RoleHood';
+		},
+		state: 'Los Angelitos',
+		directors: {
+			s: 'Spielber Stevel',
+			m: 'Mel Bigson'
+		}
+	};
+
+	observerCore.setData({
+		movies: changed_movies
+	}).apply();
+	observerCore.extendData({
+		movies: {
+			action: ['The God, the Bald, the Ogre']
+		}
+	}).apply();
+
+	observerCore
+	.watch('movies.directors.s', function(data) {
+		var old_value = ObserverCore.utils.getProp(data.old, ['movies', 'directors', 's']),
+			new_value = data.new.movies.directors.s;
+
+		++watches;
+
+		assert('(watch(\'movies.directors.s\') - old value != new value && new value === \'Spencer Stillber\'', new_value !== old_value && new_value === 'Spencer Stillber');
+	});
+	changed_movies.directors.s = 'Spencer Stillber';
+	observerCore.apply();
+
+	assert('all watches have run', watches === 6);
+	
 
 	/////////////////////////////////////////////////////////////////////////////
-	console.log(observerCore.getData());
+	//console.log(observerCore.getData());
 
 })(jQuery, ObserverCore);

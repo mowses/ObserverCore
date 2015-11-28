@@ -1,6 +1,8 @@
 ;
 (function($, Events, ObjDiff, ObjDeleted) {
 
+    'use strict';
+
     function ObserverCore() {
         var self = this,
             data = {},
@@ -47,32 +49,86 @@
 
                 $.each(watching_callbacks, function(i, watching) {
                     var diff = (function() {
-                            var _diff;
+                            var _diff,
+                                inArray = $.inArray,
+                                isArray = $.isArray;
 
                             $.each(watching.params, function(i, param) {
-                                param = $.isFunction(param) ? param() : param;
-                                var prop = utils.getProp(updated_data, 'diff.' + param);
+                                var result = param(),
+                                    prop,
+                                    old_prop;
 
-                                if (utils.isset(prop)) {
-                                    _diff = prop;
-                                    return false;
+                                if (inArray(result[0], ['delete']) >= 0) return;
+
+                                prop = utils.getProp(updated_data, 'diff.' + result[1]);
+
+                                if (!utils.isset(prop)) return;
+
+                                old_prop = utils.getProp(updated_data, 'old.' + result[1]);
+
+                                /**
+                                 * listening to "add" events, make sure to trigger only when adding the property
+                                 * for this, check for the previously value inside "old" property
+                                 *
+                                 * exception for array values:
+                                 * 
+                                 */
+                                if (inArray(result[0], ['add']) >= 0) {
+                                    if (isArray(prop)) {
+                                        if (isArray(old_prop) && prop.length <= old_prop.length) return;  // not added new item to array
+
+                                        // trigger callback even if prop is array and old_prop not
+                                        
+                                        // probably old_prop is not an array
+                                        // or old_prop is an array but length < prop
+                                        // then its ok to carry on
+
+                                    } else if (utils.isset(old_prop)) return;
                                 }
+
+                                /**
+                                 * listening to "change" events, make sure to trigger only when changed the property
+                                 * for this, check for the previously value inside "old" property (should be previously set)
+                                 */
+                                if ($.inArray(result[0], ['change']) >= 0 && !utils.isset(old_prop)) return;
+
+                                _diff = prop;
+                                return false;
                             });
 
                             return _diff;
                         })(),
 
                         deleted = (function() {
-                            var _deleted;
+                            var _deleted,
+                                inArray = $.inArray,
+                                isArray = $.isArray;
 
                             $.each(watching.params, function(i, param) {
-                                param = $.isFunction(param) ? param() : param;
-                                var prop = utils.getProp(updated_data, 'deleted.' + param);
+                                var result = param(),
+                                    prop = utils.getProp(updated_data, 'deleted.' + result[1]);
 
-                                if (utils.isset(prop)) {
-                                    _deleted = prop;
-                                    return false;
+                                if (!utils.isset(prop)) return;
+
+                                if (inArray(result[0], ['add', 'change']) >= 0) return;
+
+                                /**
+                                 * if listening to "delete", make sure to trigger only watches that where explicit bound to.
+                                 * ex:
+                                 * - listening to "delete:lorem.ipsum" should trigger watch only if lorem.ipsum was deleted
+                                 *     and should not trigger when some of its children was deleted
+                                 * 
+                                 * - if you were bound "delete:lorem.ipsum.dolor" and you have delete "lorem.ipsum", the callback
+                                 *     wont be triggered because it will only trigger for that explicit property
+                                 *
+                                 * - exceptions: if you bound "delete:lorem.ipsum" which were an array then should trigger
+                                 */
+                                if (inArray(result[0], ['delete']) >= 0) {
+                                    if (!isArray(prop) && prop !== true) return;
                                 }
+
+                                _deleted = prop;
+                                return false;
                             });
 
                             return _deleted;
@@ -176,7 +232,17 @@
             params = params.length ? params : [''];
 
             watching_callbacks.push({
-                params: params,
+                params: $.map(params, function(p) {
+                    // for each param, wraps it with a function and should return an array containing:
+                    // index[0]: the watch type: ex: add, create, delete, etc... or undefined
+                    // index[1]: the path to the object property
+                    return function() {
+                        var result = $.isFunction(p) ? p() : p,
+                            split = result.split(':');
+
+                        return (split.length > 1 ? split : [undefined, split[0]]);
+                    };
+                }),
                 callback: callback,
                 scope: this
             });
@@ -234,7 +300,7 @@
                     inner_object = object,
                     indexes_length = indexes.length - 1;
 
-                for (i in indexes) {
+                for (var i in indexes) {
                     var key = indexes[i];
 
                     if (i < indexes_length) {
