@@ -1,5 +1,7 @@
 (function($, ObserverCore) {
+	var errors = 0;
 	function assert(desc, cond) {
+		errors += cond!==true;
 		console[cond===true ? 'log': 'error'](desc, cond);
 	}
 
@@ -12,9 +14,19 @@
 
 	assert('(undefined === \'changedname\')', observerCore.getData(undefined) === 'changedname');
 	/////////////////////////////////////////////////////////////////////////////
+	observerCore.setData({
+		lorem: {
+			ipsum: 'ipsum'
+		}
+	});
+	observerCore.setData('somefoo', null);
+
+	assert('(\'somefoo\' === null)', observerCore.getData('somefoo') === null);
+	assert('(\'lorem.ipsum\' === \'ipsum\')', observerCore.getData('lorem.ipsum') === 'ipsum');
+	/////////////////////////////////////////////////////////////////////////////
 	observerCore.setData('foialterado');
 
-	assert('( === \'foialterado\')', observerCore.getData() === 'foialterado');
+	assert('(getData() === \'foialterado\')', observerCore.getData() === 'foialterado');
 	/////////////////////////////////////////////////////////////////////////////
 	observerCore.setData({
 		music: false
@@ -241,6 +253,7 @@
 	observerCore.apply();
 
 	assert('all watches have run', watches === 6);
+	console.info('ERRORS FOUND:', errors);
 	
 
 	/////////////////////////////////////////////////////////////////////////////

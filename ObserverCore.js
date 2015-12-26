@@ -147,7 +147,7 @@
         this.setData = function(prop, new_data) {
             var utils = self.utils;
 
-            if (!utils.isset(new_data)) {
+            if (new_data !== null && !utils.isset(new_data)) {
                 new_data = prop;
                 prop = undefined;
             }
