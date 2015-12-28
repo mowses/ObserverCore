@@ -62,7 +62,7 @@
 
                                 prop = utils.getProp(updated_data, 'diff.' + result[1]);
 
-                                if (!utils.isset(prop)) return;
+                                if (prop === undefined) return;
 
                                 old_prop = utils.getProp(updated_data, 'old.' + result[1]);
 
@@ -134,7 +134,7 @@
                             return _deleted;
                         })();
 
-                    if (!utils.isset(diff) && !utils.isset(deleted)) return;
+                    if (diff === undefined && deleted === undefined) return;
 
                     // run the callback
                     watching.callback.call(watching.scope, updated_data);

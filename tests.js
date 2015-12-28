@@ -252,7 +252,27 @@
 	changed_movies.directors.s = 'Spencer Stillber';
 	observerCore.apply();
 
-	assert('all watches have run', watches === 6);
+	/////////////////////////////////////////////////////////////////////////////
+	observerCore.watch('destination', function(data) {
+		if (data.old.destination) return;
+		assert('(watch(\'destination\') - old value === null: ', data.old.destination === undefined);
+		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.diff.destination.x === 100 && data.diff.destination.y === 200);
+		assert('above watch should run once:', (++watches === 7));
+	})
+	.watch('destination', function(data) {
+		if (!data.old.destination) return;
+		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.new.destination === null);
+		assert('above watch should run once:', (++watches === 8));
+	});
+	observerCore.setData('destination', {
+		x: 100,
+		y: 200
+	}).apply();
+	observerCore.setData('destination', null).apply();
+	/////////////////////////////////////////////////////////////////////////////
+
+	var total_watches_should_run = 8;
+	assert('all watches have run', watches === total_watches_should_run);
 	console.info('ERRORS FOUND:', errors);
 	
 
