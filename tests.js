@@ -263,12 +263,28 @@
 		if (!data.old.destination) return;
 		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.new.destination === null);
 		assert('above watch should run once:', (++watches === 8));
-	});
+	})
 	observerCore.setData('destination', {
 		x: 100,
 		y: 200
 	}).apply();
 	observerCore.setData('destination', null).apply();
+	/////////////////////////////////////////////////////////////////////////////
+	observerCore
+	.watch('somevar0001', function(data) {
+		if (data.old.somevar0001 === data.new.somevar0001) {
+			assert('(watch(\'somevar0001\') - old value: ' + data.old.somevar0001 + ' new value: ' + data.new.somevar0001 + ' both should be different', false);
+		}
+	});
+	observerCore.setData('somevar0001', null).apply();
+	observerCore.setData('somevar0001', null).apply();
+	observerCore.setData('somevar0001', 1).apply();
+	observerCore.setData('somevar0001', 1).apply();
+	observerCore.setData('somevar0001', true).apply();
+	observerCore.setData('somevar0001', true).apply();
+	observerCore.setData('somevar0001', false).apply();
+	observerCore.setData('somevar0001', false).apply();
+	/*observerCore.setData('somevar0001', undefined).apply();*/
 	/////////////////////////////////////////////////////////////////////////////
 
 	var total_watches_should_run = 8;
