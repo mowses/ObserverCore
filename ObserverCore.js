@@ -301,6 +301,13 @@
                     indexes_length = indexes.length - 1;
 
                 for (var i in indexes) {
+                    /**
+                     * continue for non own properties
+                     * should not create keys for non own properties
+                     * ex: if you pass an simple array, it could have its inherited foreach, max, min methods
+                     */
+                    if (!indexes.hasOwnProperty(i)) continue;
+                    
                     var key = indexes[i];
 
                     if (i < indexes_length) {
