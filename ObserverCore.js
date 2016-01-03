@@ -254,7 +254,7 @@
             var _data = data;
 
             if ($.type(prop) === 'string') {
-                _data = this.utils.getProp(data, prop);
+                _data = self.utils.getProp(data, prop);
             }
 
             if ($.isPlainObject(_data) || $.isArray(_data)) {
