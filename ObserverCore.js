@@ -7,7 +7,6 @@
         var self = this,
             data = {},
             data_old = {},
-            timeout = undefined,
             watching_callbacks = [];
 
         this.events = new Events([
@@ -26,21 +25,6 @@
                     deleted: data_deleted
                 });
             }
-        }
-
-        function stopTimeout() {
-            clearTimeout(timeout);
-            timeout = undefined;
-        }
-
-        function startTimeout() {
-            if (timeout !== undefined) return;
-
-            stopTimeout();
-
-            timeout = setTimeout(function() {
-                self.apply();
-            });
         }
 
         function init() {
@@ -153,7 +137,7 @@
             }
             if (!utils.isset(prop)) {
                 data = new_data;
-                startTimeout();
+                cycles.register(self);
                 return this;
             }
 
@@ -167,7 +151,7 @@
                 $.extend(true, data, self.utils.object(prop, new_data));
             }
 
-            startTimeout();
+            cycles.register(self);
 
             return this;
         };
@@ -180,7 +164,7 @@
             }
             if (!utils.isset(prop)) {
                 $.extend(true, data, new_data);
-                startTimeout();
+                cycles.register(self);
                 return this;
             }
 
@@ -198,7 +182,7 @@
                 $.extend(true, data, self.utils.object(prop, new_data));
             }
 
-            startTimeout();
+            cycles.register(self);
             return this;
         };
 
@@ -208,14 +192,14 @@
             data_old = $.extend(true, {}, data);
             check_changes(old_data, data);
 
-            stopTimeout();
+            cycles.removeCycle(self);
 
             return this;
         };
 
         this.restoreParams = function() {
             data = $.extend(true, {}, data_old);
-            stopTimeout();
+            cycles.removeCycle(self);
 
             return this;
         };
@@ -261,7 +245,7 @@
                 // only start timeout if _data is either an object or array
                 // if returned _data is a primitive value, it doesnt need to start timeout
                 // since you cannot change the value of returned _data outside this scope
-                startTimeout();
+                cycles.register(self);
             }
 
             return _data;
@@ -350,6 +334,56 @@
             }
         }
     });
+
+    // run ObserverCore apply() methods
+    // this time, using cycles:
+    // - register only one instance and will always be appended to the end
+    // - order does not matter
+    // - will run the first item in the array and continue running until time spent in the
+    //   process runs out 'maxTime'
+    // - when maxTime reached break the cycle and start timeout, running a new cycle sequence again
+    var cycles = {
+        cycles: [],
+        timeout: null,
+        maxTime: 700,  // miliseconds
+        startTimeout: function() {
+            if (this.timeout !== null) return;
+
+            this.timeout = setTimeout($.proxy(this.runCycle, this), 0);
+        },
+        runCycle: function() {
+            var instance;
+            var started_at = new Date().getTime();
+            var current_time = started_at;
+            var time_spent = 0;
+            var max_time = this.maxTime;
+
+            while ((instance = this.cycles[0]) && time_spent < max_time) {
+                this.cycles.splice(0, 1);
+                instance.apply();
+                current_time = new Date().getTime();
+                time_spent = current_time - started_at;
+            }
+            this.timeout = null;
+
+            // start next cycle
+            if (this.cycles[0]) {
+                this.startTimeout();
+            }
+        },
+        register: function(instance) {
+            this.removeCycle(instance);
+            this.cycles.push(instance);
+            this.startTimeout();
+        },
+        removeCycle: function(instance) {
+            let indexof = this.cycles.indexOf(instance);
+            if (indexof != -1) {
+                this.cycles.splice(indexof, 1);
+            }
+        }
+    };
+    window.cycles = cycles;
 
     // prototype
     $.extend(ObserverCore.prototype, {
