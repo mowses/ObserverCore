@@ -384,7 +384,6 @@
             }
         }
     };
-    window.cycles = cycles;
 
     // prototype
     $.extend(ObserverCore.prototype, {
