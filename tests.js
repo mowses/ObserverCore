@@ -190,6 +190,7 @@
 	console.log('ASSERT FOR INHERITED PROPERTIES:');
 	assert('(movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData('movies.adventure[0]') === 'Indy John: The hunters of lost arc');
 	assert('(movies.state === \'Carly Forny\')', observerCore.getData('movies.state') === 'Carly Forny');
+	assert('(movies.hasOwnProperty(\'state\') === false)', observerCore.getData('movies').hasOwnProperty('state') === false);
 	assert('(movies.getMadeIn() === \'made in HoleWood\')', observerCore.getData('movies').getMadeIn() === 'made in HoleWood');
 	assert('(movies.hasOwnProperty(\'getMadeIn\') === false)', observerCore.getData('movies').hasOwnProperty('getMadeIn') === false);
 

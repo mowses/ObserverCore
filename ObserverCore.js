@@ -236,6 +236,7 @@
 
         this.getData = function(prop) {
             var _data = data;
+            if (prop === false) return _data;  // prevent calling cycle when false is passed
 
             if ($.type(prop) === 'string') {
                 _data = self.utils.getProp(data, prop);
