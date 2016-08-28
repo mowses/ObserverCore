@@ -187,15 +187,19 @@
 		movies: movies
 	}).apply();
 
-	console.log('ASSERT FOR INHERITED PROPERTIES:');
-	assert('(movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData('movies.adventure[0]') === 'Indy John: The hunters of lost arc');
-	assert('(movies.state === \'Carly Forny\')', observerCore.getData('movies.state') === 'Carly Forny');
+	console.log('ASSERT FOR INHERITED PROPERTIES: YOU SHOULD NEVER INHERIT PROPERTIES');
+	assert('(movies.adventure[0] === undefined)', observerCore.getData('movies.adventure[0]') === undefined);  // in previous versions of jquery it would return a value but now gonna return undefined because it was prototyped
+	assert('getData().movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData().movies.adventure[0] === 'Indy John: The hunters of lost arc');  // but if we really want to get the value for prototyped objects, we should do this way
+	assert('(movies).hasOwnProperty(\'adventure\') === true', observerCore.getData('movies').hasOwnProperty('adventure') === true);
+	assert('(movies).state === \'Carly Forny\')', observerCore.getData('movies').state === 'Carly Forny');
+	assert('(movies.state) === undefined', observerCore.getData('movies.state') === undefined);
 	assert('(movies.hasOwnProperty(\'state\') === false)', observerCore.getData('movies').hasOwnProperty('state') === false);
 	assert('(movies.getMadeIn() === \'made in HoleWood\')', observerCore.getData('movies').getMadeIn() === 'made in HoleWood');
 	assert('(movies.hasOwnProperty(\'getMadeIn\') === false)', observerCore.getData('movies').hasOwnProperty('getMadeIn') === false);
 
 	console.log('ASSERT FOR CHANGES:');
 	var watches = 0;
+	var should_not_run = 0;
 	observerCore
 	.watch('movies.adventure[0]', function(data) {
 		assert('(watch(\'movies.adventure[0]\') - old value: ' + data.old.movies.adventure[0] + ' new value: ' + data.new.movies.adventure[0], data.diff.movies.adventure[0] === 'The Adventure of Indiana Dog: Hunting for Bones');
@@ -213,8 +217,10 @@
 		var old_value = ObserverCore.utils.getProp(data.old, ['movies', 'directors', 's']),
 			new_value = data.new.movies.directors.s;
 
+		// maybe this should not run? because its watching for a __proto__ property...
+		//++should_not_run;
+		
 		++watches;
-
 		assert('(watch(\'movies.directors.s\') - old value: ' + old_value + ' new value: ' + new_value, new_value !== old_value);
 	});
 
@@ -235,20 +241,21 @@
 	observerCore.setData({
 		movies: changed_movies
 	}).apply();
-	observerCore.extendData({
+	/*observerCore.extendData({
 		movies: {
 			action: ['The God, the Bald, the Ogre']
 		}
-	}).apply();
+	}).apply();*/
 
 	observerCore
 	.watch('movies.directors.s', function(data) {
 		var old_value = ObserverCore.utils.getProp(data.old, ['movies', 'directors', 's']),
 			new_value = data.new.movies.directors.s;
 
-		++watches;
+		++should_not_run;
+		/*++watches;
 
-		assert('(watch(\'movies.directors.s\') - old value != new value && new value === \'Spencer Stillber\'', new_value !== old_value && new_value === 'Spencer Stillber');
+		assert('(watch(\'movies.directors.s\') - old value != new value && new value === \'Spencer Stillber\'', new_value !== old_value && new_value === 'Spencer Stillber');*/
 	});
 	changed_movies.directors.s = 'Spencer Stillber';
 	observerCore.apply();
@@ -258,12 +265,12 @@
 		if (data.old.destination) return;
 		assert('(watch(\'destination\') - old value === null: ', data.old.destination === undefined);
 		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.diff.destination.x === 100 && data.diff.destination.y === 200);
-		assert('above watch should run once:', (++watches === 7));
+		assert('above watch should run once:', (++watches === 5));
 	})
 	.watch('destination', function(data) {
 		if (!data.old.destination) return;
 		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.new.destination === null);
-		assert('above watch should run once:', (++watches === 8));
+		assert('above watch should run once:', (++watches === 6));
 	})
 	observerCore.setData('destination', {
 		x: 100,
@@ -287,10 +294,42 @@
 	observerCore.setData('somevar0001', false).apply();
 	/*observerCore.setData('somevar0001', undefined).apply();*/
 	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	/// showing that extending proto is a BAD IDEA:
+	var a = {movies: {
+		adventure: ['aventchura']
+	}};
+	var b = {movies: {
+		action: ['acao']
+	}};
+	a.movies.__proto__ = {
+		getMadeIn: function() {console.log('madein');}
+	};
 
-	var total_watches_should_run = 8;
+	console.log('===============================');
+	console.log('jQuery object inheritance problem: before inherit:');
+	assert('a.movies.adventure[0] == \'aventchura\'', a.movies.adventure[0] == 'aventchura');
+	assert('a.movies.getMadeIn !== undefined', a.movies.getMadeIn !== undefined);
+	assert('a.movies.action === undefined', a.movies.action === undefined);
+	console.log('after $.extend():');
+	$.extend(true, a, b);
+	assert('a.movies.adventure === undefined', a.movies.adventure === undefined);  // lost property because it was inherited with __proto__
+	assert('a.movies.getMadeIn === undefined', a.movies.getMadeIn === undefined);
+	assert('a.movies.action[0] === \'acao\'', a.movies.action[0] === 'acao');
+
+	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////
+	console.log('===============================');
+	var total_watches_should_run = 6;
 	assert('all watches have run', watches === total_watches_should_run);
+	assert('should_not_run === 0', should_not_run === 0);
 	console.info('ERRORS FOUND:', errors);
+	console.warn('I discovered that extending object __proto__ or prototype is such a bad idea. It will break jQuery. John Resig says it in: http://markmail.org/message/tv7vxcir6w3p2h5e and http://stackoverflow.com/questions/1827458/prototyping-object-in-javascript-breaks-jquery');
+	console.warn('Previous versions of jQuery did not break like that. Now, try to just change jquery to version 2.1.1 and see a lot of errors. I had to change tests.js file to fit the new jQuery version (from now 3.1.0)');
 	
 
 	/////////////////////////////////////////////////////////////////////////////
