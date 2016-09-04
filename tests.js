@@ -188,11 +188,11 @@
 	}).apply();
 
 	console.log('ASSERT FOR INHERITED PROPERTIES: YOU SHOULD NEVER INHERIT PROPERTIES');
-	assert('(movies.adventure[0] === undefined)', observerCore.getData('movies.adventure[0]') === undefined);  // in previous versions of jquery it would return a value but now gonna return undefined because it was prototyped
-	assert('getData().movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData().movies.adventure[0] === 'Indy John: The hunters of lost arc');  // but if we really want to get the value for prototyped objects, we should do this way
+	assert('(movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData('movies.adventure[0]') === 'Indy John: The hunters of lost arc');  // I have changed ObserverCore to make it bring prototyped properties when using utils.getProp
+	assert('getData().movies.adventure[0] === \'Indy John: The hunters of lost arc\')', observerCore.getData().movies.adventure[0] === 'Indy John: The hunters of lost arc');
 	assert('(movies).hasOwnProperty(\'adventure\') === true', observerCore.getData('movies').hasOwnProperty('adventure') === true);
 	assert('(movies).state === \'Carly Forny\')', observerCore.getData('movies').state === 'Carly Forny');
-	assert('(movies.state) === undefined', observerCore.getData('movies.state') === undefined);
+	assert('(movies.state) === \'Carly Forny\'', observerCore.getData('movies.state') === 'Carly Forny');  // now getProp returns __proto__ properties too
 	assert('(movies.hasOwnProperty(\'state\') === false)', observerCore.getData('movies').hasOwnProperty('state') === false);
 	assert('(movies.getMadeIn() === \'made in HoleWood\')', observerCore.getData('movies').getMadeIn() === 'made in HoleWood');
 	assert('(movies.hasOwnProperty(\'getMadeIn\') === false)', observerCore.getData('movies').hasOwnProperty('getMadeIn') === false);

@@ -323,7 +323,10 @@
                 var a = $.isArray(s) ? s : ObserverCore.utils.propToArray(s);
                 while (a.length) {
                     var n = a.shift();
-                    if (!$.isPlainObject(o) && !$.isArray(o)) {
+                    // getProp should iteract over __proto__ properties too
+                    // $.isPlainObject returns false if object has a __proto__ property
+                    // thats why I am no longer using it
+                    if (typeof o != 'object' && !$.isArray(o)) {
                         return;
                     } else if (n in o) {
                         o = o[n];
