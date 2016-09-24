@@ -1,4 +1,5 @@
 (function($, ObserverCore) {
+	var start = new Date();
 	var errors = 0;
 	function assert(desc, cond) {
 		errors += cond!==true;
@@ -263,8 +264,8 @@
 	/////////////////////////////////////////////////////////////////////////////
 	observerCore.watch('destination', function(data) {
 		if (data.old.destination) return;
-		assert('(watch(\'destination\') - old value === null: ', data.old.destination === undefined);
-		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + data.new.destination, data.diff.destination.x === 100 && data.diff.destination.y === 200);
+		assert('(watch(\'destination\') - old value === undefined: ', data.old.destination === undefined);
+		assert('(watch(\'destination\') - old value: ' + data.old.destination + ' new value: ' + JSON.stringify(data.new.destination) + ': x === 100 && y === 200', data.diff.destination.x === 100 && data.diff.destination.y === 200);
 		assert('above watch should run once:', (++watches === 5));
 	})
 	.watch('destination', function(data) {
@@ -323,13 +324,73 @@
 	/////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////
+	/// now ObserverCore supports set model data to any object type like new MyConstructor()
+	function Custom() {
+		this.method1 = function(){console.log('method1 runs');return 'ok';}
+		this.method2 = function(){console.log('method2 runs');}
+		this.property1 = 'property1 value';
+		this.property2 = Math.random();
+	}
+
+	observerCore
+	.watch('date', function(data) {
+		assert('data.diff.date.constructor.name === \'Date\'', data.diff.date.constructor.name === 'Date');
+		assert('typeof data.diff.date === \'object\'', typeof data.diff.date === 'object');
+		assert('data.diff.date instanceof Date', data.diff.date instanceof Date);
+		assert('above watch should run once:', (++watches === 7));
+	})
+	.watch('custom', function(data) {
+		if (data.diff.custom.constructor.name !== 'Custom') return;
+		assert('data.diff.custom.constructor.name === \'Custom\'', data.diff.custom.constructor.name === 'Custom');
+		assert('typeof data.diff.custom === \'object\'', typeof data.diff.custom === 'object');
+		assert('data.diff.custom instanceof Custom', data.diff.custom instanceof Custom);
+		assert('data.diff.custom.method1() === \'ok\'', data.diff.custom.method1() === 'ok');
+		assert('data.diff.custom.property1 === \'property1 value\'', data.diff.custom.property1 === 'property1 value');
+		assert('ObserverCore.utils.getProp(data, \'diff.custom.property1\') === \'property1 value\'', ObserverCore.utils.getProp(data, 'diff.custom.property1') === 'property1 value');
+		assert('above watch should run once:', (++watches === 8));
+	})
+	.watch('math', function(data) {
+		assert('data.diff.math.constructor.name === \'Object\'', data.diff.math.constructor.name === 'Object');
+		assert('typeof data.diff.math === \'object\'', typeof data.diff.math === 'object');
+		assert('data.diff.math instanceof Object', data.diff.math instanceof Object);
+		assert('above watch should run once:', (++watches === 9));
+	});
+
+	observerCore.extendData({
+		date: new Date(),
+		custom: new Custom(),
+		math: Math
+	}).apply();
+
+	observerCore.watch('custom', function(data) {
+		// https://api.jquery.com/jquery.extend/
+		// Properties that are an object constructed via new MyCustomObject(args),
+		// or built-in JavaScript types such as Date or RegExp, are not re-constructed
+		// and will appear as plain Objects in the resulting object or array.
+		// 
+		// if you could make it as re-constructed object even good
+		
+		assert('data.diff.custom.constructor.name === \'Object\'', data.diff.custom.constructor.name === 'Object');
+		assert('typeof data.diff.custom === \'object\'', typeof data.diff.custom === 'object');
+		assert('data.diff.custom instanceof Object', data.diff.custom instanceof Object);
+		assert('data.diff.custom.property1 === undefined', data.diff.custom.property1 === undefined);
+		assert('data.diff.custom.extended.extendedProperty === \'extended property using extendData\'', data.diff.custom.extended.extendedProperty === 'extended property using extendData');
+
+		assert('above watch should run once:', (++watches === 10));
+	});
+	observerCore.extendData('custom.extended', {
+		extendedProperty: 'extended property using extendData'
+	}).apply();
+	/////////////////////////////////////////////////////////////////////////////
 	console.log('===============================');
-	var total_watches_should_run = 6;
+	var total_watches_should_run = 10;
 	assert('all watches have run', watches === total_watches_should_run);
 	assert('should_not_run === 0', should_not_run === 0);
 	console.info('ERRORS FOUND:', errors);
 	console.warn('I discovered that extending object __proto__ or prototype is such a bad idea. It will break jQuery. John Resig says it in: http://markmail.org/message/tv7vxcir6w3p2h5e and http://stackoverflow.com/questions/1827458/prototyping-object-in-javascript-breaks-jquery');
 	console.warn('Previous versions of jQuery did not break like that. Now, try to just change jquery to version 2.1.1 and see a lot of errors. I had to change tests.js file to fit the new jQuery version (from now 3.1.0)');
+	var end = new Date();
+	console.log('Time taken:', end.getTime() - start.getTime(), 'ms');
 	
 
 	/////////////////////////////////////////////////////////////////////////////
