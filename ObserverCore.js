@@ -29,18 +29,18 @@ const ObserverCore = function () {
         self.events.on('update data.__watching_data__', function (updated_data) {
             let utils = self.utils;
 
-            watching_callbacks.forEach(function (watching, i) {
+            watching_callbacks.forEach(function (watching) {
                 let diff = (function () {
                         let _diff = undefined,
                             inArray = ObjDiff.prototype.utils.inArray,
                             isArray = Array.isArray;
 
-                        watching.params.forEach(function (param, i) {
+                        watching.params.forEach(function (param) {
                             let result = param(),
                                 prop,
                                 old_prop;
 
-                            if (inArray(result[0], ['delete']) >= 0) return;
+                            if (result[0] == 'delete') return;
 
                             prop = utils.getProp(updated_data, 'diff.' + result[1]);
 
@@ -55,7 +55,7 @@ const ObserverCore = function () {
                              * exception for array values:
                              *
                              */
-                            if (inArray(result[0], ['add']) >= 0) {
+                            if (result[0] == 'add') {
                                 if (isArray(prop)) {
                                     if (isArray(old_prop) && prop.length <= old_prop.length) return;  // not added new item to array
 
@@ -72,7 +72,7 @@ const ObserverCore = function () {
                              * listening to "change" events, make sure to trigger only when changed the property
                              * for this, check for the previously value inside "old" property (should be previously set)
                              */
-                            if (inArray(result[0], ['change']) >= 0 && !utils.isset(old_prop)) return;
+                            if (result[0] == 'change' && !utils.isset(old_prop)) return;
 
                             _diff = prop;
                             return false;
@@ -86,7 +86,7 @@ const ObserverCore = function () {
                             inArray = ObjDiff.prototype.utils.inArray,
                             isArray = Array.isArray;
 
-                        watching.params.forEach(function (param, i) {
+                        watching.params.forEach(function (param) {
                             let result = param(),
                                 prop = utils.getProp(updated_data, 'deleted.' + result[1]);
 
@@ -194,7 +194,7 @@ const ObserverCore = function () {
         return this;
     };
 
-    this.restoreParams = function () {
+    this.restoreData = function () {
         data = ObjDiff.prototype.utils.extend(true, {}, data_old);
         cycles.removeCycle(self);
 
@@ -203,13 +203,13 @@ const ObserverCore = function () {
 
     /**
      * watch for changes in your data
-     * @param  {string, array, callback}   params   params to watch for
+     * @param  {string, array, callback}   prop   params to watch for
      * @param  {Function} callback callback to run when your param changes
      * @return {Object}            return itself for method chaining
      */
-    this.watch = function (params, callback) {
+    this.watch = function (prop, callback) {
 
-        params = Array.isArray(params) ? params : [params];
+        let params = Array.isArray(prop) ? prop : [prop];
         params = params.length ? params : [''];
 
         watching_callbacks.push({

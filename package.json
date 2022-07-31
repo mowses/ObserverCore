@@ -5,7 +5,7 @@
   "description": "Watch javascript object property and value changes.",
   "main": "ObserverCore.js",
   "scripts": {
-    "test": "node ./test.js"
+    "test": "node ./tests/test1.js; node ./tests/test2.js;"
   },
   "dependencies": {
     "@mowses/Events": "github:mowses/Events",

@@ -1,4 +1,4 @@
-import ObserverCore from './ObserverCore.js';
+import ObserverCore from '../ObserverCore.js';
 
 let start = new Date();
 let errors = 0;
@@ -11,6 +11,7 @@ function assert(desc, cond) {
 let observerCore = new ObserverCore();
 
 console.clear();
+console.log('###################### TEST2.JS ######################');
 console.log('ALL OF THE CONSOLES SHOULD RETURN TRUE TO PASS', observerCore);
 /////////////////////////////////////////////////////////////////////////////
 observerCore.setData(undefined, 'changedname');
