@@ -28,7 +28,7 @@ Setting, extending, getting and applying data:
 ----------------------------
 There are some methods you can use to work with object data:
 
-- **setData([property,] data)**: Use this method to set or replace data from your object. This method uses a shallow copy from the passed *data* to your current data. The first parameter may be a string containing the property path you want to set the data. The second parameter is the data itself. You may omit the *property* to set the whole object with *data*.
+- **setData([property,] data)**: Use this method to set or replace data from your object. This method uses a shallow copy from the passed *data* to your current object. The first parameter may be a string containing the property path you want to set the data. The second parameter is the data itself. You may omit the *property* to set the whole object with *data*.
 
 ```javascript
 // example of setting initial data
