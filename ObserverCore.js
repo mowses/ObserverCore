@@ -1,11 +1,12 @@
 import {ObjDeleted, ObjDiff} from '@mowses/ObjDiff';
 import Events from '@mowses/Events';
 
-const ObserverCore = function () {
-    let self = this,
-        data = {},
-        data_old = {},
+const ObserverCore = function (_data) {
+    const self = this,
         watching_callbacks = [];
+    
+    var data = {},
+        data_old = {};
 
     this.events = new Events([
         'update data'
@@ -123,6 +124,9 @@ const ObserverCore = function () {
             })
         });
 
+        if (_data !== undefined) {
+            self.setData(_data);
+        }
     }
 
     this.setData = function (prop, new_data) {
