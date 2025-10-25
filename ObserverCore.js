@@ -125,7 +125,7 @@ const ObserverCore = function (_data) {
         });
 
         if (_data !== undefined) {
-            self.setData(_data);
+            self.setData(_data).apply();
         }
     }
 
