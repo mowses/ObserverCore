@@ -128,6 +128,8 @@ person.extendData('apparitions.seasons.season 2', [
 
 > Note: The callback's data properties old, new, diff and deleted are relative to the root of your object.
 
+> From within your callback, you may want to `return false` to prevent other callbacks from the same property to get executed in the current cycle.
+
 You can also watch for data only when a specific action occurs: `add`, `change` or `delete`. Just prefix the property with the action followed by `:`. Example: `add:friends`, `change:friends`, `delete:friends`.
 
 ```javascript
@@ -154,5 +156,6 @@ person
 Tests
 --------------------------------------
 ```sh
+npm update
 npm run test
 ```

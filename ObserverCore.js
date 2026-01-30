@@ -29,6 +29,8 @@ const ObserverCore = function (_data) {
     function init() {
         self.events.on('update data.__watching_data__', function (updated_data) {
             let utils = self.utils;
+            // store the prevented callback execution (callbacks that returns false)
+            let prevent_callback_execution = [];
 
             watching_callbacks.forEach(function (watching) {
                 let diff = (function () {
@@ -37,17 +39,21 @@ const ObserverCore = function (_data) {
                             isArray = Array.isArray;
 
                         watching.params.forEach(function (param) {
-                            let result = param(),
+                            let [watch_type, watch_property] = param(),
                                 prop,
                                 old_prop;
 
-                            if (result[0] == 'delete') return;
+                            if (prevent_callback_execution.includes(watch_type + ':' + watch_property)) {
+                                return;
+                            }
 
-                            prop = utils.getProp(updated_data, 'diff.' + result[1]);
+                            if (watch_type == 'delete') return;
+
+                            prop = utils.getProp(updated_data, 'diff.' + watch_property);
 
                             if (prop === undefined) return;
 
-                            old_prop = utils.getProp(updated_data, 'old.' + result[1]);
+                            old_prop = utils.getProp(updated_data, 'old.' + watch_property);
 
                             /**
                              * listening to "add" events, make sure to trigger only when adding the property
@@ -56,7 +62,7 @@ const ObserverCore = function (_data) {
                              * exception for array values:
                              *
                              */
-                            if (result[0] == 'add') {
+                            if (watch_type == 'add') {
                                 if (isArray(prop)) {
                                     if (isArray(old_prop) && prop.length <= old_prop.length) return;  // not added new item to array
 
@@ -73,7 +79,7 @@ const ObserverCore = function (_data) {
                              * listening to "change" events, make sure to trigger only when changed the property
                              * for this, check for the previously value inside "old" property (should be previously set)
                              */
-                            if (result[0] == 'change' && !utils.isset(old_prop)) return;
+                            if (watch_type == 'change' && !utils.isset(old_prop)) return;
 
                             _diff = prop;
                             return false;
@@ -88,12 +94,12 @@ const ObserverCore = function (_data) {
                             isArray = Array.isArray;
 
                         watching.params.forEach(function (param) {
-                            let result = param(),
-                                prop = utils.getProp(updated_data, 'deleted.' + result[1]);
+                            let [watch_type, watch_property] = param(),
+                                prop = utils.getProp(updated_data, 'deleted.' + watch_property);
 
                             if (!utils.isset(prop)) return;
 
-                            if (inArray(result[0], ['add', 'change']) >= 0) return;
+                            if (inArray(watch_type, ['add', 'change']) >= 0) return;
 
                             /**
                              * if listening to "delete", make sure to trigger only watches that where explicit bound to.
@@ -106,7 +112,7 @@ const ObserverCore = function (_data) {
                              *
                              * - exceptions: if you bound "delete:lorem.ipsum" which were an array then should trigger
                              */
-                            if (inArray(result[0], ['delete']) >= 0) {
+                            if (inArray(watch_type, ['delete']) >= 0) {
                                 if (!isArray(prop) && prop !== true) return;
                             }
 
@@ -120,7 +126,14 @@ const ObserverCore = function (_data) {
                 if (diff === undefined && deleted === undefined) return;
 
                 // run the callback
-                watching.callback.call(watching.scope, updated_data);
+                let ret = watching.callback.call(watching.scope, updated_data);
+                // if callback return is false then do not trigger the same watch in this cycle
+                if (ret === false) {
+                    watching.params.forEach(param => {
+                        const [watch_type, watch_property] = param();
+                        prevent_callback_execution.push(watch_type + ':' + watch_property);
+                    });
+                }
             })
         });
 

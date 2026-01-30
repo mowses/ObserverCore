@@ -8,6 +8,7 @@ let watches = {
     'delete:friends': 0,
     'change:friends': 0,
     'change:friends.1.type': 0,
+    'name': 0,
 };
 
 function assert(desc, cond) {
@@ -35,6 +36,15 @@ person
     })
     .watch('change:friends.1.type', data => {
         watches['change:friends.1.type']++;
+    })
+    .watch('name', data => {
+        watches['name']++;
+        return false;
+    })
+    // should not trigger this watch because the watcher above returned false
+    .watch('name', data => {
+        console.error('It should not trigger this watch');
+        watches['name']++;
     });
 
 // example of setting initial data
@@ -47,7 +57,14 @@ person.setData({
     ],
 }).apply();
 
+// example of triggering watch function
+person.setData('name', 'Earl').apply();
+person.setData('name', 'Hickey').apply();
+
 // example of replacing a string
+person.setData('name', 'Earl Jehoshaphat Hickey').apply();
+
+// example of setting the same value (should not trigger watcher for this property) 
 person.setData('name', 'Earl Jehoshaphat Hickey').apply();
 
 // example of replacing an array item with updated data
@@ -137,6 +154,7 @@ assert('watches[add:friends] === 2', watches['add:friends'] === 2);
 assert('watches[delete:friends] === 0', watches['delete:friends'] === 0);
 assert('watches[change:friends] === 2', watches['change:friends'] === 2);
 assert('watches[change:friends.1.type] === 1', watches['change:friends.1.type'] === 1);
+assert('watches[name] === 4', watches['name'] === 4);
 /////////////////////////////////////////////////////////////////////////////
 console.log('\n===============================');
 console.info('ERRORS FOUND:', errors);
