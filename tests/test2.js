@@ -135,11 +135,27 @@ person.extendData('apparitions.seasons.season 2', [
     'The Trial',
 ]).apply();
 
+// example of restoring old data
+person.extendData({
+    name: 'INVALID NAME',
+    birthday: new Date('1900-01-01'),
+    invalidProp1: true,
+}).restoreData();
+
+// example of partially restoring old data
+person.extendData({
+    name: 'INVALID NAME',
+    birthday: new Date('1900-01-01'),
+    invalidProp2: true,
+}).restoreData(['name', 'birthday', 'invalidProp2']);
+
 /////////////////////////////////////////////////////////////////////////////
 console.log('\nASSERT FINAL DATA:');
 const final = person.getData();
-
 assert('person.name === Earl Jehoshaphat Hickey', final.name === 'Earl Jehoshaphat Hickey');
+assert('person.birthday === 9849600000', final.birthday.getTime() === 9849600000);
+assert('person.invalidProp1 === undefined', final.invalidProp1 === undefined);
+assert('person.invalidProp2 === undefined', final.invalidProp2 === undefined);
 assert('person.friends.length === 3', final.friends.length === 3);
 assert('person.friends[0].name === Randall "Randy" Dew Hickey', final.friends[0].name === 'Randall "Randy" Dew Hickey');
 assert('person.friends[1].name === Joy Turner', final.friends[1].name === 'Joy Turner');

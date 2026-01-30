@@ -211,8 +211,25 @@ const ObserverCore = function (_data) {
         return this;
     };
 
-    this.restoreData = function () {
-        data = ObjDiff.prototype.utils.extend(true, {}, data_old);
+    this.restoreData = function (props) {
+        if (props) {
+            // restore only the passed props
+            props = Array.isArray(props) ? props : [props];
+
+            props.forEach(prop => {
+                const old_data = self.utils.getProp(data_old, prop);
+
+                if (old_data === undefined) {
+                    self.utils.removeProp(data, prop);
+                } else {
+                    self.utils.setProp(data, prop, old_data);
+                }
+            });
+        } else {
+            // restore everything
+            data = ObjDiff.prototype.utils.extend(true, {}, data_old);
+        }
+        
         cycles.removeCycle(self);
 
         return this;
@@ -347,6 +364,54 @@ ObserverCore.prototype.utils = {
             }
         }
         return o;
+    },
+
+    setProp: function (o, s, value) {
+        let a = Array.isArray(s) ? s : ObserverCore.prototype.utils.propToArray(s);
+        
+        if (!a.length) return;
+
+        let l = a.pop();
+
+        while (a.length) {
+            let n = a.shift();
+            // setProp should interact over __proto__ properties too
+            // $.isPlainObject returns false if object has a __proto__ property
+            // that's why I am no longer using it
+            if (typeof o != 'object' && !Array.isArray(o)) {
+                return;
+            } else if (n in o) {
+                o = o[n];
+            } else {
+                return;
+            }
+        }
+
+        o[l] = value;
+    },
+
+    removeProp: function (o, s) {
+        let a = Array.isArray(s) ? s : ObserverCore.prototype.utils.propToArray(s);
+        
+        if (!a.length) return;
+
+        let l = a.pop();
+
+        while (a.length) {
+            let n = a.shift();
+            // setProp should interact over __proto__ properties too
+            // $.isPlainObject returns false if object has a __proto__ property
+            // that's why I am no longer using it
+            if (typeof o != 'object' && !Array.isArray(o)) {
+                return;
+            } else if (n in o) {
+                o = o[n];
+            } else {
+                return;
+            }
+        }
+
+        delete o[l];
     },
 
     ...ObjDiff.prototype.utils,

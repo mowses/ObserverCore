@@ -119,7 +119,7 @@ person.extendData('apparitions.seasons.season 2', [
 
 - **apply()**: apply the data to the current object and trigger any watches. Internally, this method is scheduled once every time a piece of data is changed. You may call this method manually to dispatch any watches and retrieve the final data state from your object. You only need to call this method if you need to retrieve the updated state data of your object.
 - **getData([property])**: retrieve the applied data from the object, optionally using the *property*. 
-- **restoreData()**: Let's suppose you want to discard the modifications you did to your data object between the last `apply()`. Calling `restoreData()` will immediately discard any data that was not applied yet.
+- **restoreData([property,])**: Let's suppose you want to discard the modifications you did to your data object between the last `apply()`. Calling `restoreData()` will immediately discard any data that was not applied yet.
 - **watch([property,] callback)**: Watch for property changes in your data object and dispatches callback when it happens. The first parameter may be a string, an array or a callback. The callback will receive a parameter `data` which contains the following properties:
     - old: The previous data the object held.
     - new: The current data for the object.
